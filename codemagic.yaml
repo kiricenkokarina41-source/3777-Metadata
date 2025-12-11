@@ -10,8 +10,8 @@ workflows:
         # тут мають лежати APPSTORE_ISSUER_ID, APPSTORE_KEY_ID, APPSTORE_P8, APPLE_EMAIL
         - appstore-connect
       vars:
-        IOS_BUNDLE_ID: com.lieonovaproj.app
-        APP_NAME: MysticZen
+        IOS_BUNDLE_ID: com.Kyrychenkoproj.app
+        APP_NAME: Daytona Road
 
     scripts:
       - name: Print working dir & contents
