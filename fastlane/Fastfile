@@ -114,10 +114,10 @@ platform :ios do
         add_id_info_uses_idfa: true
       },
       app_review_information: {
-        first_name: "Natalia",
-        last_name: "Stepanenko",
-        phone_number: "+380672510030",
-        email_address: "Stepanen44@gmail.com"
+        first_name: "Karyna",
+        last_name: "Kyrychenko",
+        phone_number: "+380972574363",
+        email_address: "Kiricenkokarina41@gmail.com"
       },
       reject_if_possible: false,
       run_precheck_before_submit: true,
@@ -128,4 +128,5 @@ platform :ios do
     )
   end
 end
+
 
