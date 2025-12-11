@@ -1,0 +1,131 @@
+platform :ios do
+  desc "Upload metadata + screenshots"
+  lane :upload_metadata do
+    # 1. Підключаємось до App Store Connect
+    app_store_connect_api_key(
+      key_id: ENV["APPSTORE_KEY_ID"],
+      issuer_id: ENV["APPSTORE_ISSUER_ID"],
+      key_content: ENV["APPSTORE_P8"]
+    )
+
+    UI.message("Current directory: #{Dir.pwd}")
+
+    # 2. Знаходимо metadata_path (як і було)
+    possible_metadata_paths = [
+      "metadata",
+      "./metadata",
+      "../metadata",
+      "./fastlane/metadata",
+      "../fastlane/metadata"
+    ]
+
+    metadata_path = nil
+    possible_metadata_paths.each do |path|
+      if Dir.exist?(path)
+        metadata_path = path
+        UI.success("Found metadata path: #{path}")
+        break
+      end
+    end
+
+    if metadata_path.nil?
+      UI.user_error!("Cannot find metadata path. Tried: #{possible_metadata_paths.join(', ')}")
+    else
+      UI.message("Metadata folder contents: #{Dir.entries(metadata_path).join(', ')}")
+
+      en_us_path = File.join(metadata_path, "en-US")
+      if Dir.exist?(en_us_path)
+        UI.message("Metadata en-US exists and contains: #{Dir.entries(en_us_path).join(', ')}")
+      else
+        UI.error("Missing required en-US metadata folder in #{metadata_path}")
+      end
+    end
+
+    UI.message("APPSTORE_KEY_ID set: #{!ENV['APPSTORE_KEY_ID'].to_s.empty?}")
+    UI.message("APPSTORE_ISSUER_ID set: #{!ENV['APPSTORE_ISSUER_ID'].to_s.empty?}")
+    UI.message("APPSTORE_P8 set: #{!ENV['APPSTORE_P8'].to_s.empty?}")
+    UI.message("Bundle ID: #{ENV['IOS_BUNDLE_ID']}")
+
+    # 3. REVIEW INFO (як було)
+    review_info_path = File.join(metadata_path, "review_information")
+    if Dir.exist?(review_info_path)
+      required_files = %w[first_name.txt last_name.txt email_address.txt phone_number.txt]
+      missing_files = []
+      empty_files = []
+
+      required_files.each do |file|
+        file_path = File.join(review_info_path, file)
+        if !File.exist?(file_path)
+          missing_files << file
+        elsif File.zero?(file_path)
+          empty_files << file
+          File.write(file_path, "N/A")
+          UI.message("Added placeholder 'N/A' to empty review info file: #{file}")
+        end
+      end
+
+      UI.error("Missing required review information files: #{missing_files.join(', ')}") if missing_files.any?
+      UI.message("Fixed empty review information files: #{empty_files.join(', ')}") if empty_files.any?
+    else
+      UI.error("Missing review_information directory in metadata path")
+    end
+
+    # 4. 🔍 ДЕБАГ ДЛЯ СКРІНІВ
+    screenshots_path = "screenshots"
+    UI.message("Looking for screenshots in: #{File.expand_path(screenshots_path)}")
+
+    screenshots = Dir.glob("#{screenshots_path}/**/*.{png,jpg,jpeg}")
+    UI.message("Found #{screenshots.size} screenshot file(s):")
+    screenshots.each { |p| UI.message("  - #{p}") }
+
+    # 5. ВИКЛИКАЄМО deliver
+    deliver(
+      app_identifier: ENV["IOS_BUNDLE_ID"],
+      submit_for_review: false,
+      force: true,
+
+      metadata_path: "fastlane/metadata",
+      screenshots_path: screenshots_path,   # ← тут ТВОЇ скріни
+
+      skip_app_version_update: true,
+      skip_binary_upload: true,
+      skip_screenshots: false,             # ← важливо!
+      automatic_release: false,
+      overwrite_screenshots: true,
+      precheck_include_in_app_purchases: false,
+      verbose: true,
+
+      submission_information: {
+        export_compliance_available_on_french_store: false,
+        export_compliance_contains_proprietary_cryptography: false,
+        export_compliance_contains_third_party_cryptography: false,
+        export_compliance_is_exempt: false,
+        export_compliance_uses_encryption: false,
+        export_compliance_app_type: nil,
+        export_compliance_encryption_updated: false,
+        export_compliance_compliance_required: false,
+        export_compliance_platform: "ios",
+        content_rights_contains_third_party_content: false,
+        content_rights_has_rights: false,
+        add_id_info_limits_tracking: false,
+        add_id_info_serves_ads: false,
+        add_id_info_tracks_action: false,
+        add_id_info_tracks_install: false,
+        add_id_info_uses_idfa: true
+      },
+      app_review_information: {
+        first_name: "Natalia",
+        last_name: "Stepanenko",
+        phone_number: "+380672510030",
+        email_address: "Stepanen44@gmail.com"
+      },
+      reject_if_possible: false,
+      run_precheck_before_submit: true,
+      precheck_include_in_app_purchases: false,
+      submit_for_review: false,
+      automatic_release: true,
+      precheck_default_rule_level: ":warn"
+    )
+  end
+end
+
